@@ -45,10 +45,15 @@ std::vector<std::unique_ptr<Test>> CPPUnitFinder::findTests(Context &Ctx) {
 
   for (auto &currentModule : Ctx.getModules()) {
     for (auto &function : currentModule->getModule()->getFunctionList()) {
+      if (function.isDeclaration()) {
+        continue;
+      }
+      if (function.getName() == "_ZN13MyTestFixture6myTestEv") {
       errs() << function.getName() << "\n";
-      /* tests.emplace_back(make_unique<CPPUnit_Test>(testNameStr, */
-      /*                                                 testBodyFunction, */
-      /*                                                 Ctx.getStaticConstructors())); */
+        tests.emplace_back(make_unique<CPPUnit_Test>(function.getName(),
+                                                     &function,
+                                                     Ctx.getStaticConstructors()));
+      }
     }
   }
 
@@ -104,47 +109,20 @@ CPPUnitFinder::findTestees(Test *Test,
           continue;
         }
 
-        /// Two modules may have static function with the same name, e.g.:
-        ///
-        ///   // ModuleA
-        ///   define range() {
-        ///     // ...
-        ///   }
-        ///
-        ///   define test_A() {
-        ///     call range()
-        ///   }
-        ///
-        ///   // ModuleB
-        ///   define range() {
-        ///     // ...
-        ///   }
-        ///
-        ///   define test_B() {
-        ///     call range()
-        ///   }
-        ///
-        /// Depending on the order of processing either `range` from `A` or `B`
-        /// will be added to the `context`, hence we may find function `range`
-        /// from module `B` while processing body of the `test_A`.
-        /// To avoid this problem we first look for function inside of a current
-        /// module.
-        ///
-        /// FIXME: Context should report if a function being added already exist
-        /// FIXME: What other problems such behaviour may bring?
-
         Function *definedFunction =
           testBodyModule->getFunction(calledFunction->getName());
+        /* errs() << calledFunction->getName() << " : " << calledFunction->isDeclaration() << "\n"; */
 
         if (!definedFunction || definedFunction->isDeclaration()) {
           definedFunction =
             Ctx.lookupDefinedFunction(calledFunction->getName());
         } else {
-          //Logger::debug() << "CPPUnitFinder> did not find a function: "
-          //                << definedFunction->getName() << '\n';
+          /* Logger::debug() << "CPPUnitFinder> did not find a function: " */
+          /*                 << definedFunction->getName() << '\n'; */
         }
 
         if (definedFunction) {
+          /* errs() << definedFunction->getName() << "\n"; */
           auto functionWasNotProcessed =
             checkedFunctions.find(definedFunction) == checkedFunctions.end();
 

@@ -16,7 +16,7 @@ CPPUnitMutationOperatorFilter::CPPUnitMutationOperatorFilter(
   excludeLocations(excludeLocations) {}
 
 bool CPPUnitMutationOperatorFilter::shouldSkipTesteeFunction(llvm::Function *testee) {
-  if (testee->getName().find(StringRef("testing8internal")) != StringRef::npos) {
+  if (testee->getName().find(StringRef("CppUnit")) != StringRef::npos) {
     return true;
   }
 

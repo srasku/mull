@@ -99,7 +99,9 @@ public:
 };
 
 CPPUnitRunner::CPPUnitRunner(llvm::TargetMachine &machine)
-  : TestRunner(machine) {}
+  : TestRunner(machine) {
+    sys::DynamicLibrary::LoadLibraryPermanently("/usr/lib/i386-linux-gnu/libcppunit.so");
+}
 
 std::string CPPUnitRunner::MangleName(const llvm::StringRef &Name) {
   std::string MangledName;
