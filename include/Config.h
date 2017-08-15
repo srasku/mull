@@ -127,13 +127,13 @@ public:
     std::ifstream ifs(bitcodeFileList);
 
     for (std::string path; getline(ifs, path); ) {
-      if (path.at(0) == '#') {
+      if (path.size() && path.at(0) == '#') {
         continue;
       }
 
       bitcodePaths.push_back(path);
     }
-    
+
     return bitcodePaths;
   }
 
@@ -144,11 +144,11 @@ public:
   const std::string &getTestFramework() const {
     return testFramework;
   }
-  
+
   const std::string &getDynamicLibraries() const {
     return dynamicLibraryFileList;
   }
-  
+
   std::vector<std::string> getDynamicLibrariesPaths() const {
     std::vector<std::string> dynamicLibrariesPaths;
 
@@ -164,7 +164,7 @@ public:
 
     return dynamicLibrariesPaths;
   }
-  
+
   const std::vector<std::string> &getMutationOperators() const {
     return mutationOperators;
   }
@@ -264,16 +264,16 @@ public:
 
       errors.push_back(error.str());
     }
-    
+
     if (dynamicLibraryFileList.empty() == false) {
       std::ifstream dynamicLibraryFile(dynamicLibraryFileList.c_str());
-      
+
       if (dynamicLibraryFile.good() == false) {
         std::stringstream error;
-        
+
         error << "dynamic_library_file_list parameter points to a non-existing file: "
         << dynamicLibraryFileList;
-        
+
         errors.push_back(error.str());
       }
     }

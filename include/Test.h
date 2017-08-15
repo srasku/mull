@@ -25,7 +25,8 @@ public:
   enum TestKind {
     TK_SimpleTest,
     TK_GoogleTest,
-    TK_RustTest
+    TK_RustTest,
+    TK_CPPUnit
   };
   TestKind getKind() const { return Kind; }
   Test(TestKind K) : Kind(K) {}

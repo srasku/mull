@@ -15,6 +15,8 @@
 #include "GoogleTest/GoogleTestRunner.h"
 #include "SimpleTest/SimpleTestFinder.h"
 #include "SimpleTest/SimpleTestRunner.h"
+#include "CPPUnit/CPPUnitFinder.h"
+#include "CPPUnit/CPPUnitRunner.h"
 
 #if defined(MULL_SUPPORT_RUST)
 #include "Rust/RustTestFinder.h"
@@ -108,6 +110,13 @@ int main(int argc, char *argv[]) {
   else if (testFramework == "SimpleTest") {
     testFinder = make_unique<SimpleTestFinder>(std::move(mutationOperators));
     testRunner = make_unique<SimpleTestRunner>(toolchain.targetMachine());
+  }
+
+  else if (testFramework == "CPPUnit") {
+    testFinder = make_unique<CPPUnitFinder>(std::move(mutationOperators),
+                                            config.getTests(),
+                                            config.getExcludeLocations());
+    testRunner = make_unique<CPPUnitRunner>(toolchain.targetMachine());
   }
 
   #if defined(MULL_SUPPORT_RUST)
