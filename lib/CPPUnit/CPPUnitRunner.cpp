@@ -77,14 +77,19 @@ static void runDestructors() {
 extern "C" void *mull_cppunit_dso_handle = nullptr;
 
 class Mull_CPPUnit_Resolver : public RuntimeDyld::SymbolResolver {
+  llvm::orc::ObjectLinkingLayer<> &layer;
 public:
+  Mull_CPPUnit_Resolver(llvm::orc::ObjectLinkingLayer<> &l) : layer(l) {}
 
   RuntimeDyld::SymbolInfo findSymbol(const std::string &Name) {
+    if (auto SymAddr = layer.findSymbol(Name, false))
+      return RuntimeDyld::SymbolInfo(SymAddr.getAddress(), JITSymbolFlags::Exported);
+
     if (Name == "___cxa_atexit") {
       return findSymbol("mull_cppunit_cxa_atexit");
     }
 
-    if (Name == "___dso_handle") {
+    if (Name == "__dso_handle") {
       return findSymbol("mull_cppunit_dso_handle");
     }
 
@@ -124,8 +129,6 @@ void *CPPUnitRunner::FunctionPointer(const char *FunctionName) {
 }
 
 void CPPUnitRunner::runStaticCtor(llvm::Function *Ctor) {
-//  printf("Init: %s\n", Ctor->getName().str().c_str());
-
   void *CtorPointer = GetCtorPointer(*Ctor);
 
   auto ctor = ((int (*)())(intptr_t)CtorPointer);
@@ -137,7 +140,7 @@ ExecutionResult CPPUnitRunner::runTest(Test *Test, ObjectFiles &ObjectFiles) {
 
   auto Handle = ObjectLayer.addObjectSet(ObjectFiles,
                                          make_unique<SectionMemoryManager>(),
-                                         make_unique<Mull_CPPUnit_Resolver>());
+                                         make_unique<Mull_CPPUnit_Resolver>(ObjectLayer));
 
   auto start = high_resolution_clock::now();
 
@@ -145,37 +148,12 @@ ExecutionResult CPPUnitRunner::runTest(Test *Test, ObjectFiles &ObjectFiles) {
     runStaticCtor(Ctor);
   }
 
-  std::string filter = "--gtest_filter=" + GTest->getTestName();
-  const char *argv[] = { "mull", filter.c_str(), NULL };
-  int argc = 2;
+  const char *argv[] = { "mull", NULL };
+  int argc = 1;
 
-  /// Normally Google Test Driver looks like this:
-  ///
-  ///   int main(int argc, char **argv) {
-  ///     InitCPPUnit(&argc, argv);
-  ///     return UnitTest.GetInstance()->Run();
-  ///   }
-  ///
-  /// Technically we can just call `main` function, but there is a problem:
-  /// Among all the files that are being processed may be more than one
-  /// `main` function, therefore we can call wrong driver.
-  ///
-  /// To avoid this from happening we implement the driver function on our own.
-  /// We must keep in mind that each project can have its own, extended
-  /// version of the driver (LLVM itself has one).
-  ///
-
-  void *initGTestPtr = FunctionPointer("__ZN7testing14InitCPPUnitEPiPPc");
-  auto initGTest = ((void (*)(int *, const char**))(intptr_t)initGTestPtr);
-  initGTest(&argc, argv);
-
-  void *getInstancePtr = FunctionPointer("__ZN7testing8UnitTest11GetInstanceEv");
-  auto getInstance = ((UnitTest *(*)())(intptr_t)getInstancePtr);
-  UnitTest *test = getInstance();
-
-  void *runAllTestsPtr = FunctionPointer("__ZN7testing8UnitTest3RunEv");
-  auto runAllTests = ((int (*)(UnitTest *))(intptr_t)runAllTestsPtr);
-  uint64_t result = runAllTests(test);
+  void *mainPtr = FunctionPointer("main");
+  auto main = ((int (*)(int, const char**))(intptr_t)mainPtr);
+  uint64_t result = main(argc, argv);
 
   runDestructors();
   auto elapsed = high_resolution_clock::now() - start;

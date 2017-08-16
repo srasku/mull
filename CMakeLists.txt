@@ -15,6 +15,7 @@ set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++11>)
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fsanitize=address")
 
 if (NOT CMAKE_TOOLCHAIN_FILE)
 message(FATAL_ERROR "This CMakeLists.txt file expects cmake to be called with a CMake toolchain file:
