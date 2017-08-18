@@ -37,7 +37,7 @@ bool CPPUnitMutationOperatorFilter::shouldSkipTesteeFunction(llvm::Function *tes
     MDNode *debug = testee->getMetadata(debugInfoKindID);
     DISubprogram *subprogram = dyn_cast<DISubprogram>(debug);
     if (subprogram) {
-      if (subprogram->getFilename().str().find("include/c++/v1") != std::string::npos) {
+      if (subprogram->getFilename().str().find("include/c++") != std::string::npos) {
         return true;
       }
 
