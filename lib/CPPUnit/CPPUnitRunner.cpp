@@ -148,8 +148,8 @@ ExecutionResult CPPUnitRunner::runTest(Test *Test, ObjectFiles &ObjectFiles) {
     runStaticCtor(Ctor);
   }
 
-  const char *argv[] = { "mull", NULL };
-  int argc = 1;
+  const char *argv[] = { "mull", GTest->getTestName().c_str(), NULL };
+  int argc = 2;
 
   void *mainPtr = FunctionPointer("main");
   auto main = ((int (*)(int, const char**))(intptr_t)mainPtr);
