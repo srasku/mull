@@ -32,10 +32,12 @@ using namespace llvm;
 CPPUnitFinder::CPPUnitFinder(
   std::vector<std::unique_ptr<MutationOperator>> mutationOperators,
   std::vector<std::string> testsToFilter,
-  std::vector<std::string> excludeLocations)
+  std::vector<std::string> excludeLocations,
+  std::vector<CustomTest> &customTests)
   : TestFinder(),
   mutationOperators(std::move(mutationOperators)),
-  filter(CPPUnitMutationOperatorFilter(testsToFilter, excludeLocations))
+  filter(CPPUnitMutationOperatorFilter(testsToFilter, excludeLocations)),
+  customTests(customTests)
 {
 
 }
@@ -48,12 +50,17 @@ std::vector<std::unique_ptr<Test>> CPPUnitFinder::findTests(Context &Ctx) {
       if (function.isDeclaration()) {
         continue;
       }
-      if (function.getName() == "_ZN13MyTestFixture6myTestEv") {
-      errs() << function.getName() << "\n";
-        tests.emplace_back(make_unique<CPPUnit_Test>(function.getName(),
+
+      auto it = std::find_if(customTests.begin(), customTests.end(), [&] (CustomTest test) -> bool {
+          return function.getName() == test.method;
+          });
+
+      if (it != customTests.end()) {
+        tests.emplace_back(make_unique<CPPUnit_Test>(it->name,
                                                      &function,
                                                      Ctx.getStaticConstructors()));
       }
+
     }
   }
 

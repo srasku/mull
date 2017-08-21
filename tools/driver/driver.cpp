@@ -115,7 +115,8 @@ int main(int argc, char *argv[]) {
   else if (testFramework == "CPPUnit") {
     testFinder = make_unique<CPPUnitFinder>(std::move(mutationOperators),
                                             config.getTests(),
-                                            config.getExcludeLocations());
+                                            config.getExcludeLocations(),
+                                            config.getCustomTests());
     testRunner = make_unique<CPPUnitRunner>(toolchain.targetMachine());
   }
 
