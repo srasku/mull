@@ -11,7 +11,7 @@ using namespace llvm;
 void NormalIDEDiagnostics::report(mull::MutationPoint *mutationPoint,
                                   ExecutionStatus Status) {
   if (Status != Passed) {
-    return;
+//    return;
   }
 
   const std::string &diagnostics = mutationPoint->getDiagnostics();

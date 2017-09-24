@@ -31,6 +31,7 @@ struct MappingTraits<mull::CustomTest> {
   static void mapping(IO &io, mull::CustomTest &test) {
     io.mapRequired("name", test.name);
     io.mapRequired("method", test.method);
+    io.mapRequired("target", test.target);
   }
 };
 

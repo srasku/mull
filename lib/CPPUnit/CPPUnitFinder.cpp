@@ -51,16 +51,16 @@ std::vector<std::unique_ptr<Test>> CPPUnitFinder::findTests(Context &Ctx) {
         continue;
       }
 
-      auto it = std::find_if(customTests.begin(), customTests.end(), [&] (CustomTest test) -> bool {
-          return function.getName() == test.method;
-          });
+      for (CustomTest &test: customTests) {
+        if (function.getName() != test.method) {
+          continue;
+        }
 
-      if (it != customTests.end()) {
-        tests.emplace_back(make_unique<CPPUnit_Test>(it->name,
+        tests.emplace_back(make_unique<CPPUnit_Test>(test.name,
+                                                     test.target,
                                                      &function,
                                                      Ctx.getStaticConstructors()));
       }
-
     }
   }
 
@@ -73,16 +73,35 @@ CPPUnitFinder::findTestees(Test *Test,
                               int maxDistance) {
   CPPUnit_Test *googleTest = dyn_cast<CPPUnit_Test>(Test);
 
+  Function *targetFunction = nullptr;
+  for (auto &currentModule : Ctx.getModules()) {
+    for (auto &function : currentModule->getModule()->getFunctionList()) {
+      if (function.isDeclaration()) {
+        continue;
+      }
+
+      for (CustomTest &test: customTests) {
+        if (function.getName() != test.target) {
+          continue;
+        }
+
+        targetFunction = &function;
+      }
+    }
+  }
+  assert(targetFunction);
+
   Function *testFunction = googleTest->GetTestBodyFunction();
 
   std::vector<std::unique_ptr<Testee>> testees;
+  testees.push_back(make_unique<Testee>(testFunction, nullptr, nullptr, 0));
 
   std::queue<std::unique_ptr<Testee>> traversees;
   std::set<Function *> checkedFunctions;
 
   Module *testBodyModule = testFunction->getParent();
 
-  traversees.push(make_unique<Testee>(testFunction, nullptr, nullptr, 0));
+  traversees.push(make_unique<Testee>(targetFunction, nullptr, nullptr, 0));
 
   while (!traversees.empty()) {
     std::unique_ptr<Testee> traversee = std::move(traversees.front());
@@ -92,6 +111,8 @@ CPPUnitFinder::findTestees(Test *Test,
 
     Function *traverseeFunction = traversee->getTesteeFunction();
     const int mutationDistance = traversee->getDistance();
+
+    errs() << "WTF: " << traverseeFunction->getName().str() << "\n";
 
     testees.push_back(std::move(traversee));
 
@@ -159,6 +180,8 @@ CPPUnitFinder::findTestees(Test *Test,
     }
   }
 
+  errs() << "WTF: " << testees.size() << "\n";
+
   return testees;
 }
 
@@ -181,10 +204,4 @@ CPPUnitFinder::findMutationPoints(const Context &context,
 
   MutationPointsRegistry.insert(std::make_pair(&testee, points));
   return points;
-}
-
-std::vector<std::unique_ptr<MutationPoint>> CPPUnitFinder::findMutationPoints(
-                             std::vector<MutationOperator *> &MutationOperators,
-                             llvm::Function &F) {
-  return std::vector<std::unique_ptr<MutationPoint>>();
 }

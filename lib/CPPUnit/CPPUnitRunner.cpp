@@ -148,17 +148,19 @@ ExecutionResult CPPUnitRunner::runTest(Test *Test, ObjectFiles &ObjectFiles) {
     runStaticCtor(Ctor);
   }
 
-  const char *argv[] = { "mull", GTest->getTestName().c_str(), NULL };
-  int argc = 2;
+//  const char *argv[] = { "mull", GTest->getTestName().c_str(), NULL };
+//  int argc = 2;
 
-  void *mainPtr = FunctionPointer("main");
-  auto main = ((int (*)(int, const char**))(intptr_t)mainPtr);
-  uint64_t result = main(argc, argv);
+  errs() << "Calling function: " << GTest->GetTestBodyFunction()->getName() << '\n';
+
+  void *mainPtr = FunctionPointer(MangleName(GTest->GetTestBodyFunction()->getName()).c_str());
+  auto main = ((int (*)(void))(intptr_t)mainPtr);
+  uint64_t result = main();
 
   runDestructors();
   auto elapsed = high_resolution_clock::now() - start;
 
-  //printf("%llu %s\n", result, GTest->getTestName().c_str());
+  errs() << "result is: " << result << '\n';
 
   ExecutionResult Result;
   Result.RunningTime = duration_cast<std::chrono::milliseconds>(elapsed).count();

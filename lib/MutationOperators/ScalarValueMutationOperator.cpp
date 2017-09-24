@@ -142,7 +142,6 @@ ScalarValueMutationType findPossibleApplication(Value &V,
     for (Value *operand: instruction->operands()) {
       if (ConstantInt *constantInt = dyn_cast<ConstantInt>(operand)) {
         auto intValue = constantInt->getValue();
-
         /// Skip big number because getSExtValue throws otherwise.
         /// TODO: consider these edge cases in unit tests.
         if (intValue.getNumWords() > 1) {

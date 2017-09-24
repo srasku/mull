@@ -32,6 +32,10 @@ bool CPPUnitMutationOperatorFilter::shouldSkipTesteeFunction(llvm::Function *tes
     return true;
   }
 
+  if (testee->getName().find(StringRef("clang_call_terminate")) != StringRef::npos) {
+    return true;
+  }
+
   if (testee->hasMetadata()) {
     int debugInfoKindID = 0;
     MDNode *debug = testee->getMetadata(debugInfoKindID);

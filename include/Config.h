@@ -34,6 +34,7 @@ namespace mull {
 struct CustomTest {
   std::string name;
   std::string method;
+  std::string target;
 };
 
 class Config {
@@ -266,6 +267,7 @@ public:
       for (auto customTest : getCustomTests()) {
         Logger::debug() << "\t - name: " << customTest.name << '\n';
         Logger::debug() << "\t   method: " << customTest.method << '\n';
+        Logger::debug() << "\t   target: " << customTest.target << '\n';
       }
     }
   }

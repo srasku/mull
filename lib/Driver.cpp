@@ -6,7 +6,7 @@
 #include "ModuleLoader.h"
 #include "Result.h"
 #include "TestResult.h"
-
+#include "CPPUnit/CPPUnit_Test.h"
 #include "llvm/IR/Constants.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Value.h"
@@ -126,6 +126,8 @@ std::unique_ptr<Result> Driver::Run() {
 
   int testIndex = 1;
   for (auto &test : foundTests) {
+    CPPUnit_Test *cpp_test = dyn_cast<CPPUnit_Test>(test.get());
+
     auto ObjectFiles = AllObjectFiles();
 
     Logger::debug().indent(4)
@@ -137,6 +139,12 @@ std::unique_ptr<Result> Driver::Run() {
     ExecutionResult ExecResult = Sandbox->run([&](ExecutionResult *SharedResult) {
       *SharedResult = Runner.runTest(test.get(), ObjectFiles);
     }, Cfg.getTimeout());
+    errs() << ExecResult.stdoutOutput << "\n";
+    errs() << ExecResult.stderrOutput << "\n";
+
+    if (ExecResult.Status != Passed) {
+      errs() << "Test is not passing\n";
+    }
 
     if (ExecResult.Status != Passed) {
       Logger::error() << "error: Test has failed: " << test->getTestName() << "\n";
@@ -170,6 +178,10 @@ std::unique_ptr<Result> Driver::Run() {
          ++testee_it) {
 
       auto &&testee = *testee_it;
+
+      if (testee->getTesteeFunction()->getName() != cpp_test->getTargetName()) {
+        continue;
+      }
 
       Logger::debug().indent(8)
         << "Driver::Run::process testee "
