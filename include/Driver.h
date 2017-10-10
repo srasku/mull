@@ -23,6 +23,7 @@ class Function;
 namespace mull {
 
 class Config;
+class Filter;
 class ModuleLoader;
 class Result;
 class TestFinder;
@@ -34,6 +35,7 @@ class Driver {
   TestFinder &Finder;
   TestRunner &Runner;
   Toolchain &toolchain;
+  Filter &filter;
   Context Ctx;
   ProcessSandbox *Sandbox;
   IDEDiagnostics *diagnostics;
@@ -41,8 +43,8 @@ class Driver {
   std::map<llvm::Module *, llvm::object::ObjectFile *> InnerCache;
 
 public:
-  Driver(Config &C, ModuleLoader &ML, TestFinder &TF, TestRunner &TR, Toolchain &t)
-    : Cfg(C), Loader(ML), Finder(TF), Runner(TR), toolchain(t) {
+  Driver(Config &C, ModuleLoader &ML, TestFinder &TF, TestRunner &TR, Toolchain &t, Filter &f)
+    : Cfg(C), Loader(ML), Finder(TF), Runner(TR), toolchain(t), filter(f) {
       if (C.getFork()) {
         this->Sandbox = new ForkProcessSandbox();
       } else {
