@@ -4,11 +4,11 @@
 #include <llvm/ExecutionEngine/RuntimeDyld.h>
 
 namespace mull {
-class NativeResolver : public llvm::RuntimeDyld::SymbolResolver {
+class NativeResolver : public llvm::JITSymbolResolver {
   llvm::orc::LocalCXXRuntimeOverrides &overrides;
 public:
   NativeResolver(llvm::orc::LocalCXXRuntimeOverrides &overrides);
-  llvm::RuntimeDyld::SymbolInfo findSymbol(const std::string &name) override;
-  llvm::RuntimeDyld::SymbolInfo findSymbolInLogicalDylib(const std::string &name) override;
+  llvm::JITSymbol findSymbol(const std::string &name) override;
+  llvm::JITSymbol findSymbolInLogicalDylib(const std::string &name) override;
 };
 }

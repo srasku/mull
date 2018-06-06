@@ -15,7 +15,7 @@ class Mangler;
 class Instrumentation;
 struct InstrumentationInfo;
 
-class InstrumentationResolver : public llvm::RuntimeDyld::SymbolResolver {
+class InstrumentationResolver : public llvm::JITSymbolResolver {
   llvm::orc::LocalCXXRuntimeOverrides &overrides;
   Instrumentation &instrumentation;
   std::string instrumentationInfoName;
@@ -27,7 +27,7 @@ public:
                           mull::Mangler &mangler,
                           InstrumentationInfo **trampoline);
 
-  llvm::RuntimeDyld::SymbolInfo findSymbol(const std::string &name) override;
-  llvm::RuntimeDyld::SymbolInfo findSymbolInLogicalDylib(const std::string &name) override;
+  llvm::JITSymbol findSymbol(const std::string &name) override;
+  llvm::JITSymbol findSymbolInLogicalDylib(const std::string &name) override;
 };
 }

@@ -6,7 +6,7 @@
 
 #ifndef YAML_STRING_SEQUENCE
 #define YAML_STRING_SEQUENCE
-LLVM_YAML_IS_SEQUENCE_VECTOR(std::string)
+//LLVM_YAML_IS_SEQUENCE_VECTOR(std::string)
 #endif
 
 namespace llvm {

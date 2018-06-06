@@ -17,10 +17,20 @@ namespace {
   class UnitTest;
 }
 
-static llvm::orc::ObjectLinkingLayer<>::ObjSetHandleT MullGTEstDummyHandle;
+static
+llvm::orc::RTDyldObjectLinkingLayer::MemoryManagerGetter getMemoryManager() {
+  llvm::orc::RTDyldObjectLinkingLayer::MemoryManagerGetter GetMemMgr =
+  []() {
+    return std::make_shared<SectionMemoryManager>();
+  };
+  return GetMemMgr;
+}
+
+static llvm::orc::RTDyldObjectLinkingLayer::ObjHandleT MullGTEstDummyHandle;
 
 GoogleTestRunner::GoogleTestRunner(llvm::TargetMachine &machine) :
   TestRunner(machine),
+  ObjectLayer(getMemoryManager()),
   mangler(Mangler(machine.createDataLayout())),
   overrides([this](const char *name) {
     return this->mangler.getNameWithPrefix(name);
@@ -46,7 +56,7 @@ void *GoogleTestRunner::getFunctionPointer(const std::string &functionName) {
   JITSymbol symbol = ObjectLayer.findSymbol(functionName, false);
 
   void *fpointer =
-    reinterpret_cast<void *>(static_cast<uintptr_t>(symbol.getAddress()));
+    reinterpret_cast<void *>(static_cast<uintptr_t>(symbol.getAddress().get()));
 
   if (fpointer == nullptr) {
     errs() << "GoogleTestRunner> Can't find pointer to function: "
@@ -69,26 +79,36 @@ void GoogleTestRunner::runStaticCtor(llvm::Function *Ctor) {
 void GoogleTestRunner::loadInstrumentedProgram(ObjectFiles &objectFiles,
                                                Instrumentation &instrumentation) {
   if (handle != MullGTEstDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
+    // TODO
+    ObjectLayer.removeObject(handle);
   }
 
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<InstrumentationResolver>(overrides,
-                                                                         instrumentation,
-                                                                         mangler,
-                                                                         trampoline));
-  ObjectLayer.emitAndFinalize(handle);
+//  handle = ObjectLayer.addObjectSet(objectFiles,
+//                                    make_unique<SectionMemoryManager>(),
+//                                    make_unique<InstrumentationResolver>(overrides,
+//                                                                         instrumentation,
+//                                                                         mangler,
+//                                                                         trampoline));
+//  ObjectLayer.emitAndFinalize(handle);
 }
 
 void GoogleTestRunner::loadProgram(ObjectFiles &objectFiles) {
   if (handle != MullGTEstDummyHandle) {
-    ObjectLayer.removeObjectSet(handle);
+//    ObjectLayer.removeObjectSet(handle);
   }
 
-  handle = ObjectLayer.addObjectSet(objectFiles,
-                                    make_unique<SectionMemoryManager>(),
-                                    make_unique<NativeResolver>(overrides));
+  std::shared_ptr<NativeResolver> objcResolver = std::make_shared<NativeResolver>(overrides);
+
+  std::unique_ptr<object::ObjectFile> uniqobj = std::unique_ptr<object::ObjectFile>(objectFiles[0]);
+
+  // TODO
+  llvm::object::OwningBinary<object::ObjectFile> bocj = llvm::object::OwningBinary<object::ObjectFile>(std::move(uniqobj), std::move(nullptr));
+
+  std::shared_ptr<llvm::object::OwningBinary<object::ObjectFile>> firstObj = std::shared_ptr<llvm::object::OwningBinary<object::ObjectFile>>(&bocj);
+//
+  handle = ObjectLayer.addObject(firstObj,
+                                 objcResolver).get();
+
   ObjectLayer.emitAndFinalize(handle);
 }
 

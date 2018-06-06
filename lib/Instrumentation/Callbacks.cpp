@@ -3,7 +3,7 @@
 #include "Instrumentation/Instrumentation.h"
 #include "Driver.h"
 
-#include <llvm/ExecutionEngine/Orc/JITSymbol.h>
+#include <llvm/ExecutionEngine/JITSymbol.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/GlobalVariable.h>

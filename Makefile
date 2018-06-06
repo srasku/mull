@@ -14,7 +14,7 @@ OS?=$(shell uname -s)
 
 ifeq ($(LLVM_ROOT),)
 	ifeq ($(OS), Darwin)
-		LLVM_ROOT=/opt/llvm-3.9
+		LLVM_ROOT=/opt/llvm-6.0.0
 	else
 		ifneq ($(wildcard /etc/debian_version),)
 			LLVM_ROOT=/usr/lib/llvm-3.9
