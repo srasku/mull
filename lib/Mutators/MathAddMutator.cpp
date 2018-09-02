@@ -28,6 +28,7 @@ bool MathAddMutator::isAddWithOverflow(llvm::Value &V) {
 
     if (calledFunction->getName().startswith("llvm.sadd") ||
         calledFunction->getName().startswith("llvm.uadd")) {
+      errs() << "HIT isAddWithOverflow" << "\n";
       return true;
     }
   }

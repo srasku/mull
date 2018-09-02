@@ -13,8 +13,61 @@
 #include <sys/time.h>
 #include <thread>
 #include <unistd.h>
+#include <execinfo.h>
 
 using namespace std::chrono;
+
+void printbacktrace() {
+  void *callstack[128];
+  int i, frames = backtrace(callstack, 128);
+  char** strs = backtrace_symbols(callstack, frames);
+  for (i = 0; i < frames; ++i) {
+    printf("%s\n", strs[i]);
+  }
+  free(strs);
+}
+
+void almost_c99_signal_handler(int sig)
+{
+  printbacktrace();
+
+  switch(sig)
+  {
+    case SIGABRT:
+      fputs("Caught SIGABRT: usually caused by an abort() or assert()\n", stderr);
+      break;
+    case SIGFPE:
+      fputs("Caught SIGFPE: arithmetic exception, such as divide by zero\n",
+            stderr);
+      break;
+    case SIGILL:
+      fputs("Caught SIGILL: illegal instruction\n", stderr);
+      break;
+    case SIGINT:
+      fputs("Caught SIGINT: interactive attention signal, probably a ctrl+c\n",
+            stderr);
+      break;
+    case SIGSEGV:
+      fputs("Caught SIGSEGV: segfault\n", stderr);
+      break;
+    case SIGTERM:
+    default:
+      fputs("Caught SIGTERM: a termination request was sent to the program\n",
+            stderr);
+      break;
+  }
+  _Exit(1);
+}
+
+void set_signal_handler()
+{
+  signal(SIGABRT, almost_c99_signal_handler);
+  signal(SIGFPE,  almost_c99_signal_handler);
+  signal(SIGILL,  almost_c99_signal_handler);
+  signal(SIGINT,  almost_c99_signal_handler);
+  signal(SIGSEGV, almost_c99_signal_handler);
+  signal(SIGTERM, almost_c99_signal_handler);
+}
 
 static pid_t mullFork(const char *processName) {
   static int childrenCount = 0;
@@ -32,6 +85,7 @@ static pid_t mullFork(const char *processName) {
 }
 
 static std::string readFileAndUnlink(const char *filename) {
+  return "";
   FILE *file = fopen(filename, "r");
   if (!file) {
     perror("fopen");
@@ -103,12 +157,14 @@ mull::ForkProcessSandbox::run(std::function<ExecutionStatus (void)> function,
                                                           -1,
                                                           0);
 
+  printf("eban 1\n");
   auto start = high_resolution_clock::now();
   const pid_t workerPID = mullFork("worker");
   if (workerPID == 0) {
-    freopen(stderrFilename, "w", stderr);
-    freopen(stdoutFilename, "w", stdout);
+    set_signal_handler();
 
+//    freopen(stderrFilename, "w", stderr);
+//    freopen(stdoutFilename, "w", stdout);
     handle_timeout(timeoutMilliseconds);
 
     *sharedStatus = function();
@@ -159,3 +215,88 @@ mull::ExecutionResult mull::NullProcessSandbox::run(std::function<ExecutionStatu
   result.status = function();
   return result;
 }
+
+mull::SharedData
+mull::NullProcessSandbox::runShared(std::function<void (SharedData *)> function,
+                                    long long timeoutMilliseconds) {
+  ExecutionResult result;
+  SharedData sharedData;
+  function(&sharedData);
+  result.status = sharedData.executionStatus;
+  return sharedData;
+}
+
+mull::SharedData
+mull::ForkProcessSandbox::runShared(std::function<void (SharedData *)> function,
+                              long long timeoutMilliseconds) {
+
+  char stderrFilename[] = "/tmp/mull.stderr.XXXXXX";
+  mktemp(stderrFilename);
+
+  char stdoutFilename[] = "/tmp/mull.stdout.XXXXXX";
+  mktemp(stdoutFilename);
+
+    /// Creating a memory to be shared between child and parent.
+  SharedData *sharedData = (SharedData *)mmap(NULL,
+                                              sizeof(SharedData),
+                                              PROT_READ | PROT_WRITE,
+                                              MAP_SHARED | MAP_ANONYMOUS,
+                                              -1,
+                                              0);
+
+  printf("eban 1\n");
+  auto start = high_resolution_clock::now();
+  const pid_t workerPID = mullFork("worker");
+  if (workerPID == 0) {
+    set_signal_handler();
+
+      //    freopen(stderrFilename, "w", stderr);
+      //    freopen(stdoutFilename, "w", stdout);
+    handle_timeout(timeoutMilliseconds);
+
+    function(sharedData);
+
+    fflush(stderr);
+    fflush(stdout);
+    _exit(MullExitCode);
+  } else {
+    int status = 0;
+    pid_t pid = 0;
+    while ( (pid = waitpid(workerPID, &status, 0)) == -1 ) {}
+
+    auto elapsed = high_resolution_clock::now() - start;
+
+    printf("Lucky! Output is: %s\n", sharedData->payload);
+
+    ExecutionResult result;
+    result.runningTime = duration_cast<std::chrono::milliseconds>(elapsed).count();
+    result.exitStatus = WEXITSTATUS(status);
+    result.stderrOutput = readFileAndUnlink(stderrFilename);
+    result.stdoutOutput = readFileAndUnlink(stdoutFilename);
+    result.status = sharedData->executionStatus;
+
+    SharedData resultSharedData = *sharedData;
+    int munmapResult = munmap(sharedData, sizeof(ExecutionStatus));
+
+      /// Check that mummap succeeds:
+      /// "On success, munmap() returns 0, on failure -1, and errno is set (probably to EINVAL)."
+      /// http://linux.die.net/man/2/munmap
+    assert(munmapResult == 0);
+    (void)munmapResult;
+
+    if (WIFSIGNALED(status)) {
+      result.status = Crashed;
+    }
+
+    else if (WIFEXITED(status) && WEXITSTATUS(status) == MullTimeoutCode) {
+      result.status = Timedout;
+    }
+
+    else if (WIFEXITED(status) && WEXITSTATUS(status) != MullExitCode) {
+      result.status = AbnormalExit;
+    }
+
+    return resultSharedData;
+  }
+}
+

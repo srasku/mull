@@ -14,6 +14,7 @@ class SQLiteReporter : public Reporter {
 
 private:
   std::string databasePath;
+  std::string latestDatabaseSymlinkPath;
 
 public:
   SQLiteReporter(const std::string &projectName = std::string(""));

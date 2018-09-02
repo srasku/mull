@@ -4,6 +4,7 @@
 #include <llvm/IR/DebugInfoMetadata.h>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
+#include <llvm/Support/raw_ostream.h>
 
 using namespace llvm;
 using namespace mull;
@@ -13,22 +14,37 @@ bool Filter::shouldSkipInstruction(llvm::Instruction *instruction) {
     int debugInfoKindID = 0;
     MDNode *debug = instruction->getMetadata(debugInfoKindID);
 
+    if (debug == NULL) {
+      return true;
+    }
+
     DILocation *location = dyn_cast<DILocation>(debug);
     if (location) {
+      if (location->getLine() <= 0) {
+        return true;
+      }
+
+      errs() << "location: " << location->getFilename() << "\n";
+      errs() << "line: " << location->getLine() << "\n";
+
       for (std::string &fileLocation : locations) {
         if (location->getFilename().str().find(fileLocation) != std::string::npos) {
           return true;
         }
       }
     }
+    return false;
   }
 
-  return false;
+  return true;
 }
 
 bool Filter::shouldSkipFunction(llvm::Function *function) {
+  errs() << "shouldSkipFunction: " << function->getName();
+
   for (std::string &name : names) {
     if (function->getName().find(StringRef(name)) != StringRef::npos) {
+      errs() << " [yes]\n";
       return true;
     }
   }
@@ -40,12 +56,13 @@ bool Filter::shouldSkipFunction(llvm::Function *function) {
     if (subprogram) {
       for (std::string &location : locations) {
         if (subprogram->getFilename().str().find(location) != std::string::npos) {
+          errs() << " [yes]\n";
           return true;
         }
       }
     }
   }
-
+  errs() << " [no]\n";
   return false;
 }
 

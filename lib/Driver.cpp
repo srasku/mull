@@ -20,6 +20,38 @@
 #include <vector>
 #include <sys/mman.h>
 #include <sys/types.h>
+#include <dlfcn.h>
+
+#include <llvm/Support/DynamicLibrary.h>
+#include <llvm/Support/raw_ostream.h>
+
+using namespace llvm;
+
+static void loadSwift() {
+  void *handle = dlopen("/opt/mull/BuildNinja/projects/llvm-jit-objc/llvm-jit-objc/llvm-jit-objc/src/libllvm-jit-objc.dylib", RTLD_LAZY);
+  if (!handle) {
+    printf("cannot load loadJITOvka %s\n", dlerror());
+    exit(123);
+  }
+
+  void *runnerPtr = sys::DynamicLibrary::SearchForAddressOfSymbol("SwiftRuntimeSetupLoadEverything");
+  auto runnerFPtr = ((int (*)(void))runnerPtr);
+  if (runnerFPtr == nullptr) {
+    errs() << "Could not find SwiftRuntimeSetupLoadEverything function: SwiftRuntimeSetupLoadEverything()" << "\n";
+    exit(1);
+  }
+  runnerFPtr();
+}
+
+static void runCustomXCTestFinder(char *output) {
+  void *runnerPtr = sys::DynamicLibrary::SearchForAddressOfSymbol("CustomXCTestRunnerPrintAllTests");
+  auto runnerFPtr = ((void (*)(char *))runnerPtr);
+  if (runnerFPtr == nullptr) {
+    errs() << "Could not find SwiftRuntimeSetupLoadEverything function: SwiftRuntimeSetupLoadEverything()" << "\n";
+    exit(1);
+  }
+  runnerFPtr(output);
+}
 
 using namespace llvm;
 using namespace llvm::object;
@@ -78,6 +110,21 @@ void Driver::loadBitcodeFilesIntoMemory() {
 }
 
 void Driver::compileInstrumentedBitcodeFiles() {
+  for (auto &module : context.getModules()) {
+    metrics.beginCompileOriginalModule(module->getModule());
+    auto objectFile = toolchain.cache().getObject(*module);
+    if (objectFile.getBinary() == nullptr) {
+      LLVMContext localContext;
+      auto clonedModule = module->clone(localContext);
+      objectFile = toolchain.compiler().compileModule(*clonedModule.get());
+      toolchain.cache().putObject(objectFile, *module);
+    }
+
+    innerCache.insert(std::make_pair(module->getModule(), objectFile.getBinary()));
+    ownedObjectFiles.push_back(std::move(objectFile));
+    metrics.endCompileOriginalModule(module->getModule());
+  }
+
   for (auto &ownedModule : context.getModules()) {
     MullModule &module = *ownedModule.get();
 
@@ -85,17 +132,17 @@ void Driver::compileInstrumentedBitcodeFiles() {
 
     metrics.beginCompileInstrumentedModule(module.getModule());
 
-    auto objectFile = toolchain.cache().getInstrumentedObject(module);
-    if (objectFile.getBinary() == nullptr) {
+    auto instrumentedObjectFile = toolchain.cache().getInstrumentedObject(module);
+    if (instrumentedObjectFile.getBinary() == nullptr) {
       LLVMContext instrumentationContext;
       auto clonedModule = module.clone(instrumentationContext);
 
       instrumentation.insertCallbacks(clonedModule->getModule());
-      objectFile = toolchain.compiler().compileModule(*clonedModule.get());
-      toolchain.cache().putInstrumentedObject(objectFile, module);
+      instrumentedObjectFile = toolchain.compiler().compileModule(*clonedModule.get());
+      toolchain.cache().putInstrumentedObject(instrumentedObjectFile, module);
     }
 
-    instrumentedObjectFiles.push_back(std::move(objectFile));
+    instrumentedObjectFiles.push_back(std::move(instrumentedObjectFile));
 
     metrics.endCompileInstrumentedModule(module.getModule());
   }
@@ -137,9 +184,50 @@ void Driver::loadDynamicLibraries() {
   metrics.endLoadDynamicLibraries();
 }
 
+std::vector<std::string> split(const std::string& s, char delimiter) {
+  std::vector<std::string> tokens;
+  std::string token;
+  std::istringstream tokenStream(s);
+  while (std::getline(tokenStream, token, delimiter)) {
+    tokens.push_back(token);
+  }
+  return tokens;
+}
 std::vector<std::unique_ptr<Test>> Driver::findTests() {
+  auto objectFiles = AllNonInstrumentedObjectFiles();
+
+  errs() << "obla" << objectFiles.size() << "\n";
+
+  SharedData result = sandbox->runShared([&](SharedData *sharedData){
+    printf("inside fork\n");
+    loadSwift();
+
+    runner.loadProgram(objectFiles);
+
+//    void *runnerPtr = sys::DynamicLibrary::SearchForAddressOfSymbol("CustomXCTestRunnerRunAll");
+//    auto runnerFPtr = ((int (*)(void))runnerPtr);
+//    if (runnerFPtr == nullptr) {
+//      errs() << "Could not find CustomXCTestRunner function: CustomXCTestRunnerRunAll()" << "\n";
+//      exit(1);
+//    }
+//    int result = runnerFPtr();
+
+    runCustomXCTestFinder(sharedData->payload);
+
+    ExecutionStatus status = Passed;
+    sharedData->executionStatus = status;
+    return sharedData;
+  }, 2000);
+
+  errs() << "RESULT IS (stdout): " << result.payload << "\n";
+
+  std::vector<string> testNames = split(result.payload, ',');
+  for (auto &obla: testNames) {
+    errs() << "obla: " << obla << "\n";
+  }
+
   metrics.beginFindTests();
-  auto tests = finder.findTests(context, filter);
+  auto tests = finder.findTests2(context, filter, testNames);
   metrics.endFindTests();
 
   Logger::debug() << "Found " << tests.size() << " tests\n";
@@ -159,7 +247,6 @@ Driver::findMutationPoints(std::vector<std::unique_ptr<Test>> &tests) {
   auto objectFiles = AllInstrumentedObjectFiles();
 
   metrics.beginLoadOriginalProgram();
-  runner.loadInstrumentedProgram(objectFiles, instrumentation);
   metrics.endLoadOriginalProgram();
 
   auto testIndex = 1;
@@ -172,6 +259,13 @@ Driver::findMutationPoints(std::vector<std::unique_ptr<Test>> &tests) {
 
     metrics.beginRunOriginalTest(test.get());
     ExecutionResult testExecutionResult = sandbox->run([&]() {
+      printf("before loading xctest\n");
+
+      loadSwift();
+
+      runner.loadInstrumentedProgram(objectFiles, instrumentation);
+      printf("after loading xctest 2\n");
+
       return runner.runTest(test.get());
     }, config.getTimeout());
     metrics.endRunOriginalTest(test.get());
@@ -284,21 +378,6 @@ Driver::dryRunMutations(const std::vector<MutationPoint *> &mutationPoints) {
 }
 
 std::vector<std::unique_ptr<MutationResult>> Driver::normalRunMutations(const std::vector<MutationPoint *> &mutationPoints) {
-  for (auto &module : context.getModules()) {
-    metrics.beginCompileOriginalModule(module->getModule());
-    auto objectFile = toolchain.cache().getObject(*module);
-    if (objectFile.getBinary() == nullptr) {
-      LLVMContext localContext;
-      auto clonedModule = module->clone(localContext);
-      objectFile = toolchain.compiler().compileModule(*clonedModule.get());
-      toolchain.cache().putObject(objectFile, *module);
-    }
-
-    innerCache.insert(std::make_pair(module->getModule(), objectFile.getBinary()));
-    ownedObjectFiles.push_back(std::move(objectFile));
-    metrics.endCompileOriginalModule(module->getModule());
-  }
-
   std::vector<std::unique_ptr<MutationResult>> mutationResults;
 
   const auto mutationsCount = mutationPoints.size();
@@ -313,6 +392,7 @@ std::vector<std::unique_ptr<MutationResult>> Driver::normalRunMutations(const st
     auto mutant = toolchain.cache().getObject(*mutationPoint);
     if (mutant.getBinary() == nullptr) {
       LLVMContext localContext;
+
       auto clonedModule = mutationPoint->getOriginalModule()->clone(localContext);
       mutationPoint->applyMutation(*clonedModule.get());
       mutant = toolchain.compiler().compileModule(*clonedModule.get());
@@ -321,10 +401,6 @@ std::vector<std::unique_ptr<MutationResult>> Driver::normalRunMutations(const st
     metrics.endCompileMutant(mutationPoint);
 
     objectFilesWithMutant.push_back(mutant.getBinary());
-
-    metrics.beginLoadMutatedProgram(mutationPoint);
-    runner.loadProgram(objectFilesWithMutant);
-    metrics.endLoadMutatedProgram(mutationPoint);
 
     auto testsCount = mutationPoint->getReachableTests().size();
     auto testIndex = 1;
@@ -346,6 +422,10 @@ std::vector<std::unique_ptr<MutationResult>> Driver::normalRunMutations(const st
         const auto sandboxTimeout = std::max(30LL, timeout);
 
         result = sandbox->run([&]() {
+          loadSwift();
+
+          runner.loadProgram(objectFilesWithMutant);
+
           ExecutionStatus status = runner.runTest(test);
           assert(status != ExecutionStatus::Invalid && "Expect to see valid TestResult");
           return status;
@@ -393,6 +473,20 @@ std::vector<llvm::object::ObjectFile *> Driver::AllInstrumentedObjectFiles() {
   std::vector<llvm::object::ObjectFile *> objects;
 
   for (auto &ownedObject : instrumentedObjectFiles) {
+    objects.push_back(ownedObject.getBinary());
+  }
+
+  for (auto &ownedObject : precompiledObjectFiles) {
+    objects.push_back(ownedObject.getBinary());
+  }
+
+  return objects;
+}
+
+std::vector<llvm::object::ObjectFile *> Driver::AllNonInstrumentedObjectFiles() {
+  std::vector<llvm::object::ObjectFile *> objects;
+
+  for (auto &ownedObject : ownedObjectFiles) {
     objects.push_back(ownedObject.getBinary());
   }
 

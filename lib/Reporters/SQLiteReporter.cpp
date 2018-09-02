@@ -79,6 +79,7 @@ SQLiteReporter::SQLiteReporter(const std::string &projectName) {
   std::string databasePath = currentDirectory + "/" + projectNameComponent + currentTime + ".sqlite";
 
   this->databasePath = databasePath;
+  this->latestDatabaseSymlinkPath = currentDirectory + "/" + projectNameComponent + "latest.sqlite";
 }
 
 std::string mull::SQLiteReporter::getDatabasePath() {
@@ -294,6 +295,10 @@ void mull::SQLiteReporter::reportResults(const Result &result,
   sqlite3_close(database);
 
   outs() << "Results can be found at '" << databasePath << "'\n";
+  outs() << "Latest symlink: '" << latestDatabaseSymlinkPath << "'\n";
+
+  remove(latestDatabaseSymlinkPath.c_str());
+  symlink(databasePath.c_str(), latestDatabaseSymlinkPath.c_str());
 }
 
 #pragma mark - Database Schema

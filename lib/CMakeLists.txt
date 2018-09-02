@@ -80,18 +80,6 @@ set(mull_additional_libraries
   ${LD_START_GROUP}
   ${MULL_DEPENDENCY_LLVM_LIBRARIES}
 
-  ${MULL_DEPENDENCY_LIBCLANG}
-  ${MULL_DEPENDENCY_LIBCLANG_TOOLING}
-  ${MULL_DEPENDENCY_LIBCLANG_BASIC}
-  ${MULL_DEPENDENCY_LIBCLANG_FRONTEND}
-  ${MULL_DEPENDENCY_LIBCLANG_AST}
-  ${MULL_DEPENDENCY_LIBCLANG_DRIVER}
-  ${MULL_DEPENDENCY_LIBCLANG_LEX}
-  ${MULL_DEPENDENCY_LIBCLANG_SEMA}
-  ${MULL_DEPENDENCY_LIBCLANG_SERIALIZATION}
-  ${MULL_DEPENDENCY_LIBCLANG_ANALYSIS}
-  ${MULL_DEPENDENCY_LIBCLANG_PARSE}
-  ${MULL_DEPENDENCY_LIBCLANG_EDIT}
   ${LD_END_GROUP}
 )
 
@@ -152,7 +140,10 @@ add_library(mull
 set_source_files_properties(${mull_header_dirs} PROPERTIES HEADER_FILE_ONLY ON)
 include_directories(${mull_header_dirs})
 
+# target_link_libraries(mull ${mull_additional_libraries})
 target_link_libraries(mull ${mull_additional_libraries})
+
+add_dependencies(mull llvm-jit-objc)
 
 ## Once we have mull target added, we can start querying and patching it.
 # rpath

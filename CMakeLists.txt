@@ -80,19 +80,6 @@ find_library(MULL_DEPENDENCY_LIBZ z HINTS ${MULL_TOOLCHAIN_LIBZ_PATH})
 find_library(MULL_DEPENDENCY_NCURSES ncurses)
 ## Mull's own dependencies:
 find_library(MULL_DEPENDENCY_SQLITE sqlite3 HINTS ${MULL_TOOLCHAIN_SQLITE_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG clang HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_TOOLING clangTooling HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_BASIC clangBasic HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_FRONTEND clangFrontend HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_AST clangAST HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_LEX clangLex HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_DRIVER clangDriver HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_SEMA clangSema HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_SERIALIZATION clangSerialization HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_ANALYSIS clangAnalysis HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_PARSE clangParse HINTS ${LLVM_LIB_PATH})
-find_library(MULL_DEPENDENCY_LIBCLANG_EDIT clangEdit HINTS ${LLVM_LIB_PATH})
-
 
 include_directories(${MULL_INCLUDE_DIR})
 
@@ -117,8 +104,8 @@ llvm_get_version(LLVM_VERSION)
 add_subdirectory(LLVMCompatibility/${LLVM_VERSION})
 include_directories(LLVMCompatibility/${LLVM_VERSION})
 
+add_subdirectory(projects)
 add_subdirectory(lib)
-add_subdirectory(googletest)
+# add_subdirectory(googletest)
 add_subdirectory(tools)
 add_subdirectory(unittests)
-

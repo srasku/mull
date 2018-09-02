@@ -7,7 +7,10 @@
 #include "Toolchain/Resolvers/NativeResolver.h"
 
 #include <llvm/IR/Function.h>
+#include <llvm/Support/DynamicLibrary.h>
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
+
+
 
 using namespace mull;
 using namespace llvm;
@@ -56,6 +59,7 @@ void *GoogleTestRunner::getFunctionPointer(const std::string &functionName) {
 
 void GoogleTestRunner::runStaticCtor(llvm::Function *Ctor) {
 //  printf("Init: %s\n", Ctor->getName().str().c_str());
+  return;
 
   void *CtorPointer = GetCtorPointer(*Ctor);
 
@@ -65,16 +69,46 @@ void GoogleTestRunner::runStaticCtor(llvm::Function *Ctor) {
 
 void GoogleTestRunner::loadInstrumentedProgram(ObjectFiles &objectFiles,
                                                Instrumentation &instrumentation) {
+//  return;
   InstrumentationResolver resolver(overrides, instrumentation, mangler, trampoline);
-  jit.addObjectFiles(objectFiles, resolver, make_unique<SectionMemoryManager>());
+
+  void *objcEnabledMM = sys::DynamicLibrary::SearchForAddressOfSymbol("GetObjCEnabledMemoryManager");
+  assert(objcEnabledMM);
+  SectionMemoryManager *(*objcEnabledMMFP)(void) = ((SectionMemoryManager * (*)(void))objcEnabledMM);
+//  if (runnerFPtr == nullptr) {
+//    errs() << "Could not find SwiftRuntimeSetupLoadEverything function: SwiftRuntimeSetupLoadEverything()" << "\n";
+//    exit(1);
+//  }
+//  int result = runnerFPtr();
+
+
+  SectionMemoryManager *castedObjcEnabledMM = (SectionMemoryManager *)objcEnabledMMFP();
+
+  printf("before addObjectFiles\n");
+  jit.addObjectFiles(objectFiles, resolver, std::unique_ptr<SectionMemoryManager>(castedObjcEnabledMM));
+  printf("after addObjectFiles\n");
+//  jit.addObjectFiles(objectFiles, resolver, make_unique<ObjCEnabledMemoryManager>());
 }
 
 void GoogleTestRunner::loadProgram(ObjectFiles &objectFiles) {
+//  return;
   NativeResolver resolver(overrides);
-  jit.addObjectFiles(objectFiles, resolver, make_unique<SectionMemoryManager>());
+  void *objcEnabledMM = sys::DynamicLibrary::SearchForAddressOfSymbol("GetObjCEnabledMemoryManager");
+  assert(objcEnabledMM);
+  SectionMemoryManager *(*objcEnabledMMFP)(void) = ((SectionMemoryManager * (*)(void))objcEnabledMM);
+    //  if (runnerFPtr == nullptr) {
+    //    errs() << "Could not find SwiftRuntimeSetupLoadEverything function: SwiftRuntimeSetupLoadEverything()" << "\n";
+    //    exit(1);
+    //  }
+    //  int result = runnerFPtr();
+
+
+  SectionMemoryManager *castedObjcEnabledMM = (SectionMemoryManager *)objcEnabledMMFP();
+  jit.addObjectFiles(objectFiles, resolver, std::unique_ptr<SectionMemoryManager>(castedObjcEnabledMM));
 }
 
 ExecutionStatus GoogleTestRunner::runTest(Test *test) {
+  errs() << "GoogleTestRunner::runTest " << test->getTestName() << "\n";
   *trampoline = &test->getInstrumentationInfo();
 
   GoogleTest_Test *GTest = dyn_cast<GoogleTest_Test>(test);
@@ -83,41 +117,13 @@ ExecutionStatus GoogleTestRunner::runTest(Test *test) {
     runStaticCtor(Ctor);
   }
 
-  std::string filter = "--gtest_filter=" + GTest->getTestName();
-  const char *argv[] = { "mull", filter.c_str(), NULL };
-  int argc = 2;
-
-  /// Normally Google Test Driver looks like this:
-  ///
-  ///   int main(int argc, char **argv) {
-  ///     InitGoogleTest(&argc, argv);
-  ///     return UnitTest.GetInstance()->Run();
-  ///   }
-  ///
-  /// Technically we can just call `main` function, but there is a problem:
-  /// Among all the files that are being processed may be more than one
-  /// `main` function, therefore we can call wrong driver.
-  ///
-  /// To avoid this from happening we implement the driver function on our own.
-  /// We must keep in mind that each project can have its own, extended
-  /// version of the driver (LLVM itself has one).
-  ///
-
-  void *initGTestPtr = getFunctionPointer(fGoogleTestInit);
-
-  auto initGTest = ((void (*)(int *, const char**))(intptr_t)initGTestPtr);
-  initGTest(&argc, argv);
-
-  void *getInstancePtr = getFunctionPointer(fGoogleTestInstance);
-
-  auto getInstance = ((UnitTest *(*)())(intptr_t)getInstancePtr);
-  UnitTest *unitTest = getInstance();
-
-  void *runAllTestsPtr = getFunctionPointer(fGoogleTestRun);
-
-  auto runAllTests = ((int (*)(UnitTest *))(intptr_t)runAllTestsPtr);
-  uint64_t result = runAllTests(unitTest);
-
+  void *runnerPtr = sys::DynamicLibrary::SearchForAddressOfSymbol("CustomXCTestRunnerRunOne");
+  auto runnerFPtr = ((int (*)(const char *const))runnerPtr);
+  if (runnerFPtr == nullptr) {
+    errs() << "Could not find CustomXCTestRunner function: CustomXCTestRunnerRunAll()" << "\n";
+    exit(1);
+  }
+  int result = runnerFPtr(test->getTestName().c_str());
   overrides.runDestructors();
 
   if (result == 0) {

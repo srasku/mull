@@ -91,6 +91,7 @@ private:
   std::vector<llvm::object::ObjectFile *> AllButOne(llvm::Module *One);
 
   std::vector<llvm::object::ObjectFile *> AllInstrumentedObjectFiles();
+  std::vector<llvm::object::ObjectFile *> AllNonInstrumentedObjectFiles();
 
   std::vector<std::unique_ptr<MutationResult>> dryRunMutations(const std::vector<MutationPoint *> &mutationPoints);
   std::vector<std::unique_ptr<MutationResult>> normalRunMutations(const std::vector<MutationPoint *> &mutationPoints);
