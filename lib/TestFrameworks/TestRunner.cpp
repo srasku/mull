@@ -2,6 +2,6 @@
 
 #include <llvm/Support/DynamicLibrary.h>
 
-mull::TestRunner::TestRunner() {
+mull::TestRunner::TestRunner() : shouldSkipCtors(false) {
   llvm::sys::DynamicLibrary::LoadLibraryPermanently(nullptr);
 }

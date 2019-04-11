@@ -19,8 +19,10 @@ public:
                                JITEngine &jit) override;
   void loadMutatedProgram(ObjectFiles &objectFiles, Trampolines &trampolines,
                           JITEngine &jit) override;
-  ExecutionStatus runTest(JITEngine &jit, Program &program,
-                          Test &test) override;
+  void runConstructors(JITEngine &jit, Program &program, Test &test) override;
+  ExecutionStatus runMutatedTest(JITEngine &jit, Program &program,
+                                 Test &test) override;
+  void runDestructors(JITEngine &jit, Program &program, Test &test) override;
 
 private:
   Mangler &mangler;

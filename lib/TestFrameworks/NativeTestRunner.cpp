@@ -11,6 +11,7 @@
 #include "mull/Toolchain/Trampolines.h"
 
 #include <llvm/ExecutionEngine/SectionMemoryManager.h>
+#include <mull/TestFrameworks/NativeTestRunner.h>
 
 using namespace mull;
 
@@ -61,12 +62,15 @@ void NativeTestRunner::loadInstrumentedProgram(ObjectFiles &objectFiles,
                      llvm::make_unique<llvm::SectionMemoryManager>());
 }
 
-ExecutionStatus NativeTestRunner::runTest(JITEngine &jit, Program &program,
-                                          Test &test) {
-  *trampoline = &test.getInstrumentationInfo();
+ExecutionStatus NativeTestRunner::runMutatedTest(JITEngine &jit,
+                                                 Program &program,
+                                                 Test &test) {
+  if (!shouldSkipCtors) {
+    *trampoline = &test.getInstrumentationInfo();
 
-  for (auto &constructor : program.getStaticConstructors()) {
-    runStaticConstructor(constructor, jit);
+    for (auto &constructor : program.getStaticConstructors()) {
+      runStaticConstructor(constructor, jit);
+    }
   }
 
   std::vector<std::string> arguments = test.getArguments();
@@ -91,7 +95,9 @@ ExecutionStatus NativeTestRunner::runTest(JITEngine &jit, Program &program,
   }
   delete[] argv;
 
-  overrides.runDestructors();
+  if (!shouldSkipCtors) {
+    overrides.runDestructors();
+  }
 
   if (exitStatus == 0) {
     return ExecutionStatus::Passed;
@@ -106,4 +112,19 @@ void NativeTestRunner::loadMutatedProgram(TestRunner::ObjectFiles &objectFiles,
   MutationResolver resolver(overrides, trampolines, mangler);
   jit.addObjectFiles(objectFiles, resolver,
                      llvm::make_unique<llvm::SectionMemoryManager>());
+}
+void NativeTestRunner::runConstructors(JITEngine &jit,
+                                       Program &program,
+                                       Test &test) {
+  *trampoline = &test.getInstrumentationInfo();
+
+  for (auto &constructor : program.getStaticConstructors()) {
+    runStaticConstructor(constructor, jit);
+  }
+}
+
+void NativeTestRunner::runDestructors(JITEngine &jit,
+                                      Program &program,
+                                      Test &test) {
+  overrides.runDestructors();
 }

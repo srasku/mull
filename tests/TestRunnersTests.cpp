@@ -101,7 +101,8 @@ TEST(NativeTestRunner, runTest) {
 
   testRunner.loadMutatedProgram(objectFiles, trampolines, jit);
   trampolines.fixupOriginalFunctions(jit);
-  ASSERT_EQ(ExecutionStatus::Passed, testRunner.runTest(jit, program, test));
+  ASSERT_EQ(ExecutionStatus::Passed,
+            testRunner.runMutatedTest(jit, program, test));
 
   auto &mangler = toolchain.mangler();
 
@@ -117,5 +118,6 @@ TEST(NativeTestRunner, runTest) {
   assert(address);
   *trampoline = address;
 
-  ASSERT_EQ(ExecutionStatus::Failed, testRunner.runTest(jit, program, test));
+  ASSERT_EQ(ExecutionStatus::Failed,
+            testRunner.runMutatedTest(jit, program, test));
 }

@@ -28,6 +28,11 @@ void MutantExecutionTask::operator()(iterator begin, iterator end, Out &storage,
   runner.loadMutatedProgram(objectFiles, trampolines, jit);
   trampolines.fixupOriginalFunctions(jit);
 
+  runner.shouldSkipCtors = true;
+
+  Test fakeTest("", "", "", {}, nullptr);
+  runner.runConstructors(jit, program, fakeTest);
+
   for (auto it = begin; it != end; ++it, counter.increment()) {
     auto mutationPoint = *it;
 
@@ -55,7 +60,8 @@ void MutantExecutionTask::operator()(iterator begin, iterator end, Out &storage,
 
         result = sandbox.run(
             [&]() {
-              ExecutionStatus status = runner.runTest(jit, program, *test);
+              ExecutionStatus status =
+                  runner.runMutatedTest(jit, program, *test);
               assert(status != ExecutionStatus::Invalid &&
                      "Expect to see valid TestResult");
               return status;
@@ -76,4 +82,6 @@ void MutantExecutionTask::operator()(iterator begin, iterator end, Out &storage,
 
     *trampoline = originalAddress;
   }
+
+  runner.runDestructors(jit, program, fakeTest);
 }

@@ -26,7 +26,7 @@ void OriginalTestExecutionTask::operator()(iterator begin, iterator end,
     instrumentation.setupInstrumentationInfo(test);
 
     ExecutionResult testExecutionResult = sandbox.run(
-        [&]() { return runner.runTest(jit, program, test); }, config.timeout);
+        [&]() { return runner.runMutatedTest(jit, program, test); }, config.timeout);
 
     test.setExecutionResult(testExecutionResult);
 

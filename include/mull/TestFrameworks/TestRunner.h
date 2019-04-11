@@ -16,6 +16,7 @@ class Program;
 
 class TestRunner {
 public:
+  bool shouldSkipCtors;
   typedef std::vector<llvm::object::ObjectFile *> ObjectFiles;
   typedef std::vector<llvm::object::OwningBinary<llvm::object::ObjectFile>>
       OwnedObjectFiles;
@@ -27,8 +28,11 @@ public:
                                        JITEngine &jit) = 0;
   virtual void loadMutatedProgram(ObjectFiles &objectFiles,
                                   Trampolines &trampolines, JITEngine &jit) = 0;
-  virtual ExecutionStatus runTest(JITEngine &jit, Program &program,
-                                  Test &test) = 0;
+  virtual void runConstructors(JITEngine &jit, Program &program,
+                               Test &test) = 0;
+  virtual ExecutionStatus runMutatedTest(JITEngine &jit, Program &program,
+                                         Test &test) = 0;
+  virtual void runDestructors(JITEngine &jit, Program &program, Test &test) = 0;
 
   virtual ~TestRunner() = default;
 };

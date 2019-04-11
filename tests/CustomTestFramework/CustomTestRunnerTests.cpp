@@ -50,7 +50,7 @@ TEST(CustomTestRunner, noTestNameSpecified) {
   Trampolines trampolines(trampolineNames);
   runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run(
-      [&]() { return runner.runTest(jit, program, test); }, TestTimeout);
+      [&]() { return runner.runMutatedTest(jit, program, test); }, TestTimeout);
   ASSERT_EQ(result.status, ExecutionStatus::Failed);
 }
 
@@ -83,7 +83,7 @@ TEST(CustomTestRunner, tooManyParameters) {
   Trampolines trampolines(trampolineNames);
   runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run(
-      [&]() { return runner.runTest(jit, program, test); }, TestTimeout);
+      [&]() { return runner.runMutatedTest(jit, program, test); }, TestTimeout);
   ASSERT_EQ(result.status, ExecutionStatus::Failed);
 }
 
@@ -116,7 +116,7 @@ TEST(CustomTestRunner, runPassingTest) {
   Trampolines trampolines(trampolineNames);
   runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run(
-      [&]() { return runner.runTest(jit, program, test); }, TestTimeout);
+      [&]() { return runner.runMutatedTest(jit, program, test); }, TestTimeout);
   ASSERT_EQ(result.status, ExecutionStatus::Passed);
 }
 
@@ -153,7 +153,7 @@ TEST(CustomTestRunner, runFailingTest) {
   Trampolines trampolines(trampolineNames);
   runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run(
-      [&]() { return runner.runTest(jit, program, test); }, TestTimeout);
+      [&]() { return runner.runMutatedTest(jit, program, test); }, TestTimeout);
   ASSERT_EQ(result.status, ExecutionStatus::Failed);
 }
 
@@ -185,6 +185,6 @@ TEST(CustomTestRunner, attemptToRunUnknownTest) {
   Trampolines trampolines(trampolineNames);
   runner.loadMutatedProgram(objects, trampolines, jit);
   ExecutionResult result = sandbox.run(
-      [&]() { return runner.runTest(jit, program, test); }, TestTimeout);
+      [&]() { return runner.runMutatedTest(jit, program, test); }, TestTimeout);
   ASSERT_EQ(result.status, ExecutionStatus::Failed);
 }
