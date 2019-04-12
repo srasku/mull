@@ -4,7 +4,7 @@ set (SOURCES
 )
 
 add_mull_executable(
-  NAME mull-cxx
+  NAME mull-cxx-fast
   SOURCES ${SOURCES}
   LINK_WITH ebc mull LLVMObject
 )

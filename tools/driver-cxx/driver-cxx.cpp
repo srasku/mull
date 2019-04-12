@@ -291,7 +291,7 @@ int main(int argc, char **argv) {
   //  mull::SQLiteReporter reporter;
   //  reporter.reportResults(*result, rawConfig, metrics);
 
-  mull::IDEReporter ideReporter;
+  mull::SQLiteReporter ideReporter;
   ideReporter.reportResults(*result, rawConfig, metrics);
   llvm::llvm_shutdown();
 
