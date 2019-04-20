@@ -20,6 +20,7 @@
     repo: https://github.com/fmtlib/fmt.git
     dest: "{{ working_dir }}/integration/fmt"
     version: 9e554999ce02cf86fcdfe74fe740c4fe3f5a56d5
+    depth: 1
 
 - name: Create build directory for fmt
   file:
@@ -78,6 +79,7 @@
     repo: https://github.com/openssl/openssl.git
     dest: "{{ working_dir }}/integration/openssl-no-shared"
     version: d4e4bd2a8163f355fa8a3884077eaec7adc75ff7
+    depth: 1
 
 - name: Create build directory for OpenSSL (no-shared)
   file:

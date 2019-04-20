@@ -1,0 +1,8 @@
+---
+- name: Clone LLVM's sources
+  git:
+    repo: "{{ llvm_monorepo_url }}"
+    dest: "{{ llvm_dir }}/.."
+    version: "{{ llvm_gitref }}"
+    depth: 1
+

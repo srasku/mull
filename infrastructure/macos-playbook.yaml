@@ -2,7 +2,6 @@
   hosts: "{{ host | default('all') }}"
 
   vars:
-    llvm_version: 6.0.0
     platform: macos
 
     mull_cxx_flags: ""
@@ -19,6 +18,7 @@
     - helpers/variables.yaml
 
   tasks:
+    - debug: var=llvm_dir
     - name: Prepare Working Directory
       include: helpers/working-directory.yaml
 

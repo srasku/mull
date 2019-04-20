@@ -2,7 +2,6 @@
   hosts: "{{ host | default('all') }}"
 
   vars:
-    llvm_version: 6.0.0
     platform: debian
 
     mull_cxx_flags: -D_GLIBCXX_USE_CXX11_ABI=0

@@ -1,19 +1,11 @@
 ---
-- name: Download LLVM ({{ llvm_version }})
-  get_url:
-    url: "{{ llvm_url }}"
-    dest: "{{ working_dir }}/{{ llvm_version }}.tar.gz"
-  register: download_llvm
+- name: Download precompiled LLVM
+  include: llvm-precompiled.yaml
+  when: llvm_version is not match("gitref:.*")
 
-- name: Extract LLVM ({{ llvm_version }})
-  unarchive:
-    src: "{{ working_dir }}/{{ llvm_version }}.tar.gz"
-    dest: "{{ working_dir }}"
-    remote_src: yes
-  when: download_llvm.changed
+- name: Download LLVM monorepo
+  include: llvm-monorepo.yaml
+  when: llvm_version is match("gitref:.*")
 
-- name: Move LLVM ({{ llvm_version }})
-  command: mv {{ working_dir }}/{{ llvm_path }} {{ llvm_dir }}
-  args:
-    creates: "{{ llvm_dir }}"
+
 
