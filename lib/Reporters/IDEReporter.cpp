@@ -44,10 +44,9 @@ void IDEReporter::reportResults(const Result &result, const RawConfig &config,
 
   std::set<MutationPoint *> killedMutants;
   for (auto &mutationResult : result.getMutationResults()) {
-    auto mutant = mutationResult->getMutationPoint();
-    auto &executionResult = mutationResult->getExecutionResult();
+    if (!mutationResult->hasMutantSurvived()) {
+      auto mutant = mutationResult->getMutationPoint();
 
-    if (!mutantSurvived(executionResult.status)) {
       killedMutants.insert(mutant);
     }
   }

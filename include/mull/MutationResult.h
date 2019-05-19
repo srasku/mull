@@ -22,6 +22,9 @@ public:
   MutationPoint *getMutationPoint() { return MutPoint; }
   int getMutationDistance() { return distance; }
   Test *getTest() { return test; }
+  bool hasMutantSurvived() const {
+    return Result.status == ExecutionStatus::Passed;
+  }
 };
 
 } // namespace mull

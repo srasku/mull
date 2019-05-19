@@ -14,6 +14,12 @@ int MullDefaultTimeoutMilliseconds = 3000;
 
 using namespace mull;
 
+static std::string getFileDir(const std::string &filePath) {
+  std::size_t found = filePath.find_last_of("/\\");
+  std::string fileDir = filePath.substr(0, found);
+  return fileDir;
+}
+
 JunkDetectionConfig::JunkDetectionConfig()
     : toggle(JunkDetectionToggle::Disabled), detectorName(""),
       cxxCompilationDatabasePath(""), cxxCompilationFlags("") {}
@@ -113,7 +119,7 @@ RawConfig::RawConfig()
       caching(UseCache::No), emitDebugInfo(EmitDebugInfo::No),
       diagnostics(Diagnostics::None), timeout(MullDefaultTimeoutMilliseconds),
       maxDistance(128), cacheDirectory("/tmp/mull_cache"), junkDetection(),
-      parallelizationConfig() {}
+      parallelizationConfig(), mutationTestingElementsReportPath("") {}
 
 RawConfig::RawConfig(
     const std::string &bitcodeFileList, const std::string &project,
@@ -126,7 +132,8 @@ RawConfig::RawConfig(
     DryRunMode dryRun, FailFastMode failFast, UseCache cache,
     EmitDebugInfo debugInfo, Diagnostics diagnostics, int timeout, int distance,
     const std::string &cacheDir, JunkDetectionConfig junkDetection,
-    ParallelizationConfig parallelizationConfig)
+    ParallelizationConfig parallelizationConfig,
+    const std::string &mutationTestingElementsReportPath)
     : bitcodeFileList(bitcodeFileList), projectName(project),
       testFramework(testFramework), mutators(mutators), reporters(reporters),
       dynamicLibraryFileList(dynamicLibraryFileList),
@@ -136,7 +143,8 @@ RawConfig::RawConfig(
       emitDebugInfo(debugInfo), diagnostics(diagnostics), timeout(timeout),
       maxDistance(distance), cacheDirectory(cacheDir),
       junkDetection(std::move(junkDetection)),
-      parallelizationConfig(parallelizationConfig) {}
+      parallelizationConfig(parallelizationConfig),
+      mutationTestingElementsReportPath(mutationTestingElementsReportPath) {}
 
 const std::string &RawConfig::getBitcodeFileList() const {
   return bitcodeFileList;
@@ -254,6 +262,10 @@ int RawConfig::getMaxDistance() const { return maxDistance; }
 
 std::string RawConfig::getCacheDirectory() const { return cacheDirectory; }
 
+const std::string &RawConfig::getMutationTestingElementsReportPath() const {
+  return mutationTestingElementsReportPath;
+}
+
 void RawConfig::dump() const {
   Logger::debug() << "RawConfig>\n"
                   << "\t"
@@ -350,6 +362,21 @@ std::vector<std::string> RawConfig::validate() {
 
       error << "object_file_list parameter points to a non-existing file: "
             << objectFileList;
+
+      errors.push_back(error.str());
+    }
+  }
+
+  if (!mutationTestingElementsReportPath.empty()) {
+    std::string reportPathDir = getFileDir(mutationTestingElementsReportPath);
+
+    if (!llvm::sys::fs::exists(reportPathDir)) {
+
+      std::stringstream error;
+
+      error << "mutation_testing_elements_reporter_path path's directory does "
+               "not exist:\n"
+            << reportPathDir;
 
       errors.push_back(error.str());
     }

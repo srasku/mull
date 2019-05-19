@@ -84,7 +84,17 @@ set(mull_sources
   JunkDetection/CXX/Visitors/NegateConditionVisitor.cpp
   JunkDetection/CXX/ASTStorage.cpp
   JunkDetection/CXX/CompilationDatabase.cpp
-  Reporters/IDEReporter.cpp TestFrameworks/NativeTestRunner.cpp JunkDetection/CXX/Visitors/AndOrReplacementVisitor.cpp JunkDetection/CXX/Visitors/MathMulVisitor.cpp JunkDetection/CXX/Visitors/MathDivVisitor.cpp JunkDetection/CXX/Visitors/ReplaceCallVisitor.cpp Reporters/SourceManager.cpp)
+  JunkDetection/CXX/Visitors/AndOrReplacementVisitor.cpp
+  JunkDetection/CXX/Visitors/MathMulVisitor.cpp
+  JunkDetection/CXX/Visitors/MathDivVisitor.cpp
+  JunkDetection/CXX/Visitors/ReplaceCallVisitor.cpp
+
+  Reporters/IDEReporter.cpp
+  Reporters/MutationTestingElementsReporter.cpp
+  Reporters/SourceManager.cpp
+
+  TestFrameworks/NativeTestRunner.cpp
+)
 
 set (MULL_INCLUDE_DIR ${MULL_SOURCE_DIR}/include/mull)
 
@@ -149,7 +159,7 @@ target_link_libraries(mull
   clangTooling
   Threads::Threads
 )
-target_include_directories(mull PUBLIC ${MULL_INCLUDE_DIRS})
+target_include_directories(mull PUBLIC ${MULL_INCLUDE_DIRS} ${CMAKE_SOURCE_DIR}/vendor)
 
 set_target_properties(mull PROPERTIES
   COMPILE_FLAGS ${MULL_CXX_FLAGS}
