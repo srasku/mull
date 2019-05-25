@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ASTStorage.h"
+#include "mull/MutationPoint.h"
 #include "mull/JunkDetection/JunkDetector.h"
 
 namespace mull {
@@ -15,8 +16,12 @@ public:
 
   bool isJunk(MutationPoint *point) override;
 
+  const std::map<MutationPoint *, BeginEndPair> &
+  getMutationPointsRanges() const;
+
 private:
   ASTStorage astStorage;
+  std::map<MutationPoint *, BeginEndPair> mutationPointsRanges;
 };
 
 } // namespace mull

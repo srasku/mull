@@ -18,6 +18,8 @@ class Module;
 
 namespace mull {
 
+typedef std::pair<int, int> BeginEndPair;
+
 class Compiler;
 class Mutator;
 class MullModule;

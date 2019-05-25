@@ -32,3 +32,7 @@ void RemoveVoidFunctionVisitor::handleCallExpr(
 }
 
 bool RemoveVoidFunctionVisitor::foundMutant() { return visitor.foundRange(); }
+
+clang::SourceRange RemoveVoidFunctionVisitor::getSourceRange() {
+  return visitor.getSourceRange();
+}

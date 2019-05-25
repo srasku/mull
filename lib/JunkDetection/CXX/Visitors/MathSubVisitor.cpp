@@ -27,3 +27,7 @@ bool MathSubVisitor::VisitUnaryOperator(clang::UnaryOperator *unaryOperator) {
 }
 
 bool MathSubVisitor::foundMutant() { return visitor.foundRange(); }
+
+clang::SourceRange MathSubVisitor::getSourceRange() {
+  return visitor.getSourceRange();
+}

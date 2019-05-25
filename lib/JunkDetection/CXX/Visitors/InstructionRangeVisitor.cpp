@@ -57,9 +57,34 @@ void mull::InstructionRangeVisitor::visitRangeWithLocation(
     const clang::SourceRange &range) {
   if (locationInRange(sourceManager, range, sourceLocation)) {
     sourceRange = smallestSourceRange(sourceManager, sourceRange, range);
+    __sourceRange = range;
+
+//    {
+//      clang::FullSourceLoc mutantLocation(sourceLocation, sourceManager);
+//
+//      clang::SourceRange sourceRange = range;
+//      clang::SourceLocation sourceLocationBegin = sourceRange.getBegin();
+//      clang::SourceLocation sourceLocationEnd = sourceRange.getEnd();
+//
+//      unsigned int beginCol =
+//          sourceManager.getExpansionColumnNumber(sourceLocationBegin);
+//      unsigned int endCol =
+//          sourceManager.getExpansionColumnNumber(sourceLocationEnd);
+//
+//      auto colb = sourceManager.getColumnNumber(mutantLocation.getFileID(),
+//          sourceManager.getFileOffset(sourceLocationBegin));
+//      auto cole = sourceManager.getColumnNumber(mutantLocation.getFileID(),
+//                                                sourceManager.getFileOffset(sourceLocationEnd));
+//
+//      llvm::errs() << "locations: " << beginCol << ":" << endCol << " " << colb << ":" << cole << "\n";
+//    }
   }
 }
 
 bool mull::InstructionRangeVisitor::foundRange() {
   return sourceRange.isValid();
+}
+
+clang::SourceRange mull::InstructionRangeVisitor::getSourceRange() {
+  return sourceRange;
 }

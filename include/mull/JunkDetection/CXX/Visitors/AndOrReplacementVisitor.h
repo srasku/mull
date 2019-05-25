@@ -13,6 +13,7 @@ public:
   AndOrReplacementVisitor(const VisitorParameters &parameters);
   bool VisitBinaryOperator(clang::BinaryOperator *binaryOperator);
   bool foundMutant();
+  clang::SourceRange getSourceRange();
 
 private:
   InstructionRangeVisitor visitor;

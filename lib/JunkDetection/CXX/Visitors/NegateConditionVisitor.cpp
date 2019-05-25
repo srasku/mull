@@ -23,3 +23,7 @@ bool NegateConditionVisitor::VisitUnaryOperator(
 }
 
 bool NegateConditionVisitor::foundMutant() { return visitor.foundRange(); }
+
+clang::SourceRange NegateConditionVisitor::getSourceRange() {
+  return visitor.getSourceRange();
+}

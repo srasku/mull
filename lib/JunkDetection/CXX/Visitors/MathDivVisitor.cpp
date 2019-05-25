@@ -19,3 +19,7 @@ bool MathDivVisitor::VisitBinaryOperator(
 }
 
 bool MathDivVisitor::foundMutant() { return visitor.foundRange(); }
+
+clang::SourceRange MathDivVisitor::getSourceRange() {
+  return visitor.getSourceRange();
+}

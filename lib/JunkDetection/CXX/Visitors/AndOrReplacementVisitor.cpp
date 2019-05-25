@@ -17,3 +17,7 @@ bool AndOrReplacementVisitor::VisitBinaryOperator(
 }
 
 bool AndOrReplacementVisitor::foundMutant() { return visitor.foundRange(); }
+
+clang::SourceRange AndOrReplacementVisitor::getSourceRange() {
+  return visitor.getSourceRange();
+}

@@ -31,3 +31,7 @@ void ReplaceCallVisitor::handleCallExpr(clang::CallExpr *callExpression) {
 }
 
 bool ReplaceCallVisitor::foundMutant() { return visitor.foundRange(); }
+
+clang::SourceRange ReplaceCallVisitor::getSourceRange() {
+  return visitor.getSourceRange();
+}

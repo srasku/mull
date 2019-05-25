@@ -17,3 +17,7 @@ bool ConditionalsBoundaryVisitor::VisitBinaryOperator(
 }
 
 bool ConditionalsBoundaryVisitor::foundMutant() { return visitor.foundRange(); }
+
+clang::SourceRange mull::ConditionalsBoundaryVisitor::getSourceRange() {
+  return visitor.getSourceRange();
+}

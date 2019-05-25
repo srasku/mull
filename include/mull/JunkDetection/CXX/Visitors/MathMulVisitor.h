@@ -13,7 +13,7 @@ public:
 
   bool VisitBinaryOperator(clang::BinaryOperator *binaryOperator);
   bool foundMutant();
-
+  clang::SourceRange getSourceRange();
 private:
   InstructionRangeVisitor visitor;
 };

@@ -20,9 +20,9 @@
 using namespace mull;
 using namespace json11;
 
-static json11::Json
-createFiles(const Result &result,
-            const std::set<MutationPoint *> &killedMutants) {
+static json11::Json createFiles(
+    const Result &result, const std::set<MutationPoint *> &killedMutants,
+    const std::map<MutationPoint *, BeginEndPair> &mutationPointsRanges) {
   SourceManager sourceManager;
 
   Json::object filesJSON;
@@ -67,6 +67,12 @@ createFiles(const Result &result,
     Json::array mutantsEntries;
 
     for (MutationPoint *mutationPoint : fileMutationPoints.second) {
+      if (mutationPointsRanges.count(mutationPoint) == 0) {
+        continue;
+      }
+
+      auto sourceRange = mutationPointsRanges.at(mutationPoint);
+
       auto &sourceLocation = mutationPoint->getSourceLocation();
 
       std::string status =
@@ -81,9 +87,9 @@ createFiles(const Result &result,
           {"location",
            Json::object{
                {"start", Json::object{{"line", sourceLocation.line},
-                                      {"column", sourceLocation.column}}},
+                                      {"column", sourceRange.first}}},
                {"end", Json::object{{"line", sourceLocation.line},
-                                    {"column", sourceLocation.column}}}}},
+                                    {"column", sourceRange.second}}}}},
           {"status", status}};
       mutantsEntries.push_back(mpJson);
     }
@@ -94,6 +100,10 @@ createFiles(const Result &result,
 
   return filesJSON;
 }
+
+MutationTestingElementsReporter::MutationTestingElementsReporter(
+    const std::map<MutationPoint *, BeginEndPair> &mutationPointsRanges)
+    : mutationPointsRanges(mutationPointsRanges) {}
 
 void MutationTestingElementsReporter::reportResults(const Result &result,
                                                     const RawConfig &config,
@@ -119,10 +129,10 @@ void MutationTestingElementsReporter::reportResults(const Result &result,
   Json my_json = Json::object{
       {"mutationScore", (int)score},
       {"thresholds", Json::object{{"high", 80}, {"low", 60}}},
-      {"files", createFiles(result, killedMutants)},
+      {"files", createFiles(result, killedMutants, mutationPointsRanges)},
   };
   std::string json_str = my_json.dump();
-  Logger::info() << json_str << "\n";
+  //Logger::info() << json_str << "\n";
 
   std::string outPath = "/tmp/mull.mutation-testing-elements.json";
   const std::string &configOutPath =

@@ -28,12 +28,14 @@
 #include "mull/TestFrameworks/TestFrameworkFactory.h"
 #include "mull/Version.h"
 
+
 /// Temp includes to make it running
 
 #include "mull/Config/ConfigurationOptions.h"
 #include "mull/Config/RawConfig.h"
 #include "mull/Metrics/Metrics.h"
 #include "mull/Reporters/SQLiteReporter.h"
+#include "mull/Reporters/MutationTestingElementsReporter.h"
 
 class LoadModuleFromBitcodeTask {
 public:
@@ -292,6 +294,10 @@ int main(int argc, char **argv) {
 
   mull::IDEReporter ideReporter;
   ideReporter.reportResults(*result, rawConfig, metrics);
+
+  mull::MutationTestingElementsReporter mutationTestingElementsReporter(junkDetector.getMutationPointsRanges());
+  mutationTestingElementsReporter.reportResults(*result, rawConfig, metrics);
+
   llvm::llvm_shutdown();
 
   totalExecutionTime.finish();
