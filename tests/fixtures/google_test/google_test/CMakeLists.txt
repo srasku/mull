@@ -15,6 +15,7 @@ set (FLAGS
 set (SOURCES
   ${CMAKE_CURRENT_LIST_DIR}/Test.cpp
   ${CMAKE_CURRENT_LIST_DIR}/Testee.cpp
+  ${CMAKE_CURRENT_LIST_DIR}/TypedTest.cpp
 )
 
 foreach(source ${SOURCES})
@@ -22,6 +23,11 @@ foreach(source ${SOURCES})
     INPUT ${source}
     OUTPUT_EXTENSION bc
     FLAGS ${FLAGS}
+  )
+  compile_fixture(
+    INPUT ${source}
+    OUTPUT_EXTENSION ll
+    FLAGS ${FLAGS} -S
   )
 endforeach()
 

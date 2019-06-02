@@ -93,6 +93,27 @@ mutators:
   ASSERT_EQ("HelloTest.testSumOfTestee", tests[0].getTestName());
 }
 
+TEST(GoogleTestFinder, findTypedTests) {
+  LLVMContext llvmContext;
+  ModuleLoader loader;
+  auto ModuleWithTests = loader.loadModuleAtPath(
+      fixtures::google_test_google_test_TypedTest_bc_path(), llvmContext);
+
+  std::vector<std::unique_ptr<MullModule>> modules;
+  modules.push_back(std::move(ModuleWithTests));
+  Program program({}, {}, std::move(modules));
+
+  Filter filter;
+  GoogleTestFinder Finder;
+
+  auto tests = Finder.findTests(program, filter);
+
+  ASSERT_EQ(2U, tests.size());
+
+  ASSERT_EQ("TypedTest.Hello/0", tests[0].getTestName());
+  ASSERT_EQ("TypedTest.Hello/1", tests[1].getTestName());
+}
+
 TEST(DISABLED_GoogleTestRunner, runTest) {
   const char *configYAML = R"YAML(
 mutators:
