@@ -13,9 +13,6 @@ RUN set -ex \
     && apt-get install -y \
     cmake
 
-RUN set -ex \
-    clang++
-
 COPY . mull
 
 # Build Mull
