@@ -14,7 +14,7 @@ RUN set -ex \
     && apt-get install -y \
     cmake \
     pkg-config \
-    sqlite3
+    libsqlite3-dev
 
 COPY . mull
 
