@@ -9,9 +9,12 @@ RUN set -ex \
     build-essential \
     clang
 
+# Mull-specific Dependencies
 RUN set -ex \
     && apt-get install -y \
-    cmake
+    cmake \
+    pkg-config \
+    sqlite3
 
 COPY . mull
 
