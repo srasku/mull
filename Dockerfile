@@ -1,4 +1,20 @@
-FROM mull-dependencies:latest
+FROM ubuntu:18.04
+
+# Update Apt database
+RUN set -ex \
+    && apt-get update
+
+RUN set -ex \
+    && apt-get install -y \
+    build-essential \
+    clang
+
+RUN set -ex \
+    && apt-get install -y \
+    cmake
+
+RUN set -ex \
+    clang++
 
 COPY . mull
 
