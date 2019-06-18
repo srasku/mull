@@ -105,7 +105,7 @@ Possible values: `true`/`enabled`, `false`/`disabled`. Defaults to `false`.
 
 A mutant may be accessible from many tests. Normally, Mull executes a mutant
 against each test separately. When `fail_fast` option is enabled, Mull stops
-running tests against a mutant as soon as on the tests fail.
+running tests against a mutant as soon as one of the tests fail.
 
 ---
 ```
